@@ -1,8 +1,10 @@
 package main
 
 import (
+	"encoding/binary"
 	"encoding/json"
 	"github.com/gorilla/websocket"
+	"github.com/multiformats/go-multihash"
 	"log"
 	"net/http"
 	"sync"
@@ -178,6 +180,28 @@ authLoop:
 	}
 }
 
+func getSubscriptionKeyFromPeerID(peerID string) []byte {
+	// Generate subscription key for web relay
+	peerIDMultihash, _ := multihash.FromB58String(peerID)
+	decoded, _ := multihash.Decode(peerIDMultihash)
+	digest := decoded.Digest
+	prefix := digest[:8]
+
+	prefix64 := binary.BigEndian.Uint64(prefix)
+
+	// Then shifting
+	shiftedPrefix64 := prefix64 >> uint(48)
+
+	// Then converting back to a byte array
+	shiftedBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(shiftedBytes, shiftedPrefix64)
+
+	hashedShiftedPrefix := sha256.Sum256(shiftedBytes)
+
+	subscriptionKey, _ := multihash.Encode(hashedShiftedPrefix[:], multihash.SHA2_256)
+	return subscriptionKey
+}
+
 func (rp *RelayProtocol) handleMessage(m []byte, userID string) error {
 	incomingMessage := new(TypedMessage)
 	err := json.Unmarshal(m, incomingMessage)
@@ -201,6 +225,15 @@ func (rp *RelayProtocol) handleMessage(m []byte, userID string) error {
 		if err != nil {
 			return nil
 		}
+
+		subscriptionKey := getSubscriptionKeyFromPeerID(em.Recipient)
+
+		// Send to user over websocket connection
+		conns := rp.connectedNodes[string(subscriptionKey)]
+		for _, conn := range conns {
+			conn.WriteMessage(1, b)
+		}
+
 		return rp.node.OpenBazaarNode.SendOfflineRelay(em.Recipient, b)
 	case "AckMessage":
 		return rp.db.MarkMessageAsRead(message.(AckMessage).MessageID, userID)

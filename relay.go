@@ -241,6 +241,10 @@ func (rp *RelayProtocol) handleMessage(m []byte, userID string) error {
 			conn.WriteMessage(1, b)
 		}
 
+		if len(conns) == 0 {
+			log.Printf("No connected nodes found to send socket message to: %v", rp.connectedNodes)
+		}
+
 		return rp.node.OpenBazaarNode.SendOfflineRelay(em.Recipient, b)
 	case "AckMessage":
 		return rp.db.MarkMessageAsRead(message.(AckMessage).MessageID, userID)

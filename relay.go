@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/binary"
 	"encoding/json"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/gorilla/websocket"
 	"github.com/multiformats/go-multihash"
 	"log"
@@ -44,7 +45,7 @@ func StartRelayProtocol(n *mobile.Node, db Datastore) error {
 	}
 	go rp.handlePublishes()
 	http.HandleFunc("/", rp.handleNewConnection)
-	return http.ListenAndServe(":8080", nil)
+        return http.ListenAndServeTLS(":8080", "/etc/letsencrypt/live/webchat.ob1.io/fullchain.pem", "/etc/letsencrypt/live/webchat.ob1.io/privkey.pem", nil)
 }
 
 // Run subscription protocol
@@ -219,18 +220,22 @@ func (rp *RelayProtocol) handleMessage(m []byte, userID string) error {
 		em := message.(EncryptedMessage)
 		b, err := base64.StdEncoding.DecodeString(em.Message)
 		if err != nil {
+		        log.Println("error", err.Error())
 			return err
 		}
-		_, err = peer.IDB58Decode(em.Recipient)
+		log.Printf(string(b))
+		recipient, err := peer.IDB58Decode(em.Recipient)
 		if err != nil {
 			return nil
 		}
 
-		subscriptionKey := getSubscriptionKeyFromPeerID(em.Recipient)
-
+		subscriptionKey := getSubscriptionKeyFromPeerID(recipient.Pretty())
+                log.Printf("got sub key: %s", recipient.Pretty())
+		
 		// Send to user over websocket connection
-		conns := rp.connectedNodes[string(subscriptionKey)]
+		conns := rp.connectedNodes[base58.Encode(subscriptionKey)]
 		for _, conn := range conns {
+                        log.Printf("got a connection")
 			conn.WriteMessage(1, b)
 		}
 
@@ -312,7 +317,7 @@ func (rp *RelayProtocol) subscribe(sub mh.Multihash) error {
 						continue
 					}
 					node.WriteMessage(1, out)
-				}
+				}	
 			}
 		}
 	}(sub, c)

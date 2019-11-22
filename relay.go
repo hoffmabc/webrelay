@@ -45,8 +45,8 @@ func StartRelayProtocol(n *mobile.Node, db Datastore) error {
 	go rp.handlePublishes()
 	http.HandleFunc("/", rp.handleNewConnection)
 	// Non-https default listener
-	//return http.ListenAndServe(":8080", nil)
-	return http.ListenAndServeTLS(":8080", "/etc/letsencrypt/live/webchat.ob1.io/fullchain.pem", "/etc/letsencrypt/live/webchat.ob1.io/privkey.pem", nil)
+	return http.ListenAndServe(":8080", nil)
+	//return http.ListenAndServeTLS(":8080", "/etc/letsencrypt/live/webchat.ob1.io/fullchain.pem", "/etc/letsencrypt/live/webchat.ob1.io/privkey.pem", nil)
 }
 
 // Run subscription protocol

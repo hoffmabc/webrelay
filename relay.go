@@ -1,26 +1,25 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/hex"
 	"encoding/json"
+	"errors"
+	"github.com/OpenBazaar/openbazaar-go/mobile"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/gorilla/websocket"
 	"github.com/multiformats/go-multihash"
+	"gx/ipfs/QmZoWKhxUmZ2seW4BzX6fJkNR8hh9PsGModr7q171yq2SS/go-libp2p-peer"
+	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
+	"gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
-	mh "gx/ipfs/QmZyZDi491cCNTLfAhwcaDii2Kg4pwKRkhqQzURGDvY6ua/go-multihash"
-	"errors"
-	"github.com/OpenBazaar/openbazaar-go/mobile"
-	"encoding/base64"
-	"context"
-	"gx/ipfs/QmcZfnkapfECQGcLZaf9B79NRg7cRa9EnZh4LSbkCzwNvY/go-cid"
-	"crypto/sha256"
-	"encoding/hex"
-	"gx/ipfs/QmZoWKhxUmZ2seW4BzX6fJkNR8hh9PsGModr7q171yq2SS/go-libp2p-peer"
-	"github.com/OpenBazaar/openbazaar-go/ipfs"
-	"strings"
 )
 
 var upgrader = websocket.Upgrader{
